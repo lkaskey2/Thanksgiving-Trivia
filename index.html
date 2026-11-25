@@ -166,6 +166,7 @@ async function reveal(){
   }finally{revealing=false}
 }
 async function nextQ(){if(S.qi+1>=QS.length)await G('state').update({phase:'final',q:null,correct:null,results:null});else await askQ(S.qi+1,{answers:null})}
+async function endGame(){await G('state').update({phase:'final',q:null,correct:null,results:null})}
 async function toLobby(clearPlayers){const up={state:{g:newG(),phase:'lobby',qi:-1,total:QS.length},answers:null};if(clearPlayers)up.players=null;else for(const pid of Object.keys(PL))up['players/'+pid+'/score']=0;await G('').update(up)}
 function hostPlays(){return !!(me.joined&&PL[uid]&&PL[uid].name)}
 function joinLink(){const u=new URL(location.href);u.search='';u.hash='';return u.toString()}
@@ -191,15 +192,16 @@ function renderHost(){
   const q=curQ();
   if(ph==='q'&&q){
     const on=ps.filter(p=>p.on),done=on.filter(p=>p.pid in ANS).length,hp=hostPlays(),pk=hp?(ANS[uid]??picked()):null,over=S.endsAt<=now();
-    m.innerHTML='<div class="card"><div class="qhead">'+ringHTML()+'<div class="qtext">'+esc(q.text)+'</div></div>'+optsHTML(q.opts,{pick:pk,disabled:!hp||pk!=null||over})+'<p class="msg">'+(hp?(pk!=null?'Your answer is locked in · ':'Tap your answer · '):'')+done+' of '+on.length+' answered</p></div><div class="row"><button class="btn alt" id="stop">End timer now</button></div>';
+    m.innerHTML='<div class="card"><div class="qhead">'+ringHTML()+'<div class="qtext">'+esc(q.text)+'</div></div>'+optsHTML(q.opts,{pick:pk,disabled:!hp||pk!=null||over})+'<p class="msg">'+(hp?(pk!=null?'Your answer is locked in · ':'Tap your answer · '):'')+done+' of '+on.length+' answered</p></div><div class="row"><button class="btn alt" id="stop">End timer now</button><button class="btn alt" id="endg">End game</button></div>';
+    $('#endg').onclick=endGame;
     if(hp&&pk==null&&!over)m.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(S.endsAt<=now())return;const r=S.g+'_'+S.qi,c=+b.dataset.c;myPick={r,c};G('answers/'+r+'/'+uid).set(c).catch(()=>{});lastKey='';render()});
     $('#stop').onclick=reveal;drawTimer(S.endsAt-now());return}
   if(ph==='reveal'&&q){
     const last=S.qi+1>=QS.length,res=S.results||{};
     m.innerHTML='<div class="card"><div class="qtext" style="margin-bottom:16px">'+esc(q.text)+'</div>'+optsHTML(q.opts,{correct:S.correct,disabled:true})+'</div>'+
     '<div class="card"><h2>This round</h2><ul class="list">'+ps.map(p=>{const c=res[p.pid];return '<li><span>'+esc(p.name)+'</span>'+(c==null?'<span class="tag">No answer</span>':c===S.correct?'<span class="tag ok">Correct +'+PTS+'</span>':'<span class="tag no">'+LET[c]+' — wrong</span>')+'</li>'}).join('')+'</ul></div>'+
-    '<div class="row"><button class="btn" id="next">'+(last?'See final scores':'Next question')+'</button></div>';
-    $('#next').onclick=nextQ;return}
+    '<div class="row"><button class="btn" id="next">'+(last?'See final scores':'Next question')+'</button>'+(last?'':'<button class="btn alt" id="endg">End game</button>')+'</div>';
+    $('#next').onclick=nextQ;if($('#endg'))$('#endg').onclick=endGame;return}
   const r=ranked(ps),top=r.filter(p=>p.rank===1&&p.score>0);
   m.innerHTML='<h1>Final scores</h1><div class="card">'+(top.length?'<p class="big">'+top.map(p=>esc(p.name)).join(' & ')+'</p><p style="text-align:center">'+(top.length>1?'tie for the win':'wins')+' with '+top[0].score+' points</p>':'<p>No points this time.</p>')+
   '<ul class="list">'+r.map(p=>'<li><span>'+p.rank+'. '+esc(p.name)+'</span><b>'+p.score+'</b></li>').join('')+'</ul></div>'+
