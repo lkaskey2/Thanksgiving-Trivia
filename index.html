@@ -26,6 +26,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Rubik,system-
 .chip.me{box-shadow:inset 0 0 0 2px var(--gold)}
 .chip .st{font-size:14px}
 .chip.off{opacity:.55}
+.avi{width:28px;height:28px;border-radius:50%;object-fit:cover;vertical-align:middle;background:var(--soft);flex:none;display:inline-block}
+.chip .avi{width:28px;height:28px;background:#ffffff2e}
+.avi.lg{width:96px;height:96px;margin-bottom:8px;box-shadow:0 0 0 4px var(--gold)}
+.avi.md{width:72px;height:72px}
+.picrow{display:flex;align-items:center;gap:16px;margin:6px 0 10px;flex-wrap:wrap}
+.filebtn{display:inline-flex;align-items:center;margin:0;line-height:48px}
+.filebtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.avs{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;margin:6px 0 4px}
+.av{height:52px;border:2px solid var(--line);border-radius:14px;background:var(--bg);cursor:pointer;padding:3px;display:grid;place-items:center}
+.av img{width:42px;height:42px;border-radius:50%}
+.av.on{border-color:var(--gold);background:var(--soft);box-shadow:0 0 0 3px var(--gold)}
+.av:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .empty{opacity:.85;font-size:14px;padding:6px 2px}
 main{max-width:760px;margin:0 auto;padding:clamp(20px,4vw,44px) max(4vw,16px) 64px}
 h1,h2{font-family:Bungee,sans-serif;font-weight:400;line-height:1.08;text-wrap:balance;margin:0 0 12px;color:var(--acc)}
@@ -113,6 +125,25 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const COLORS=['#8c1c2e','#c2611a','#5c6b1c','#2f5d8a'],LET=['A','B','C','D'],QMS=20000,PTS=10;
+const AV=['Pumpkin','Maple','Acorn','Cranberry','Biscuit','Gravy','Pecan','Turkey','Harvest','Cider','Nutmeg','Clove','Butter','Sage','Yam','Corn'];
+const AVBG=['f2b632','e07a1f','8c1c2e','5c6b1c','2f5d8a','c2611a'];
+const cartoonURL=i=>'https://api.dicebear.com/9.x/adventurer/svg?seed='+AV[(i>>>0)%AV.length]+'&backgroundColor='+AVBG[(i>>>0)%AVBG.length];
+const PICRE=/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
+let PICS={};
+const picOf=pid=>{const p=PICS[pid];return typeof p==='string'&&PICRE.test(p)?p:null};
+function avImg(pid,av,cls){const src=picOf(pid)||cartoonURL(Number.isInteger(av)?av:0);return '<img class="avi'+(cls?' '+cls:'')+'" src="'+esc(src)+'" alt="">'}
+let selAv=null,selPic=null;
+function avPicker(){
+  if(selAv==null)selAv=Number.isInteger(me&&me.av)?me.av:Math.floor(Math.random()*AV.length);
+  return '<label style="margin-top:14px">Your picture</label><div class="picrow"><img class="avi md" id="pv" src="'+esc(selPic||cartoonURL(selAv))+'" alt=""><label class="btn alt filebtn">Take a selfie<input type="file" accept="image/*" capture="user" id="cam"></label></div><p class="small muted" id="pm" style="margin:0 0 4px">Or pick a cartoon:</p><div class="avs" role="radiogroup" aria-label="Cartoon avatar">'+AV.map((a,i)=>'<button type="button" class="av'+(!selPic&&i===selAv?' on':'')+'" data-av="'+i+'" role="radio" aria-label="'+a+'" aria-checked="'+(!selPic&&i===selAv)+'"><img src="'+cartoonURL(i)+'" alt="" loading="lazy"></button>').join('')+'</div>'}
+function shrink(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const S=160,c=document.createElement('canvas');c.width=c.height=S;const k=Math.min(im.naturalWidth,im.naturalHeight);c.getContext('2d').drawImage(im,(im.naturalWidth-k)/2,(im.naturalHeight-k)/2,k,k,0,0,S,S);URL.revokeObjectURL(u);let q=.75,d=c.toDataURL('image/jpeg',q);while(d.length>30000&&q>.3){q-=.15;d=c.toDataURL('image/jpeg',q)}res(d)};im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u})}
+function wireAv(root){
+  const pv=root.querySelector('#pv'),btns=root.querySelectorAll('.av');
+  const mark=()=>btns.forEach(x=>{const on=!selPic&&+x.dataset.av===selAv;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))});
+  btns.forEach(b=>b.onclick=()=>{selAv=+b.dataset.av;selPic=null;pv.src=cartoonURL(selAv);mark()});
+  const cam=root.querySelector('#cam');
+  cam.onchange=()=>{const f=cam.files&&cam.files[0];if(!f)return;root.querySelector('#pm').textContent='Processing photo…';shrink(f).then(d=>{selPic=d;pv.src=d;mark();root.querySelector('#pm').textContent='Looking good! Or pick a cartoon instead:'},()=>{root.querySelector('#pm').textContent='Couldn\'t read that photo. Try again, or pick a cartoon:'})};
+}
 const toText=a=>a.map(r=>r.join(' | ')).join('\n');
 function parseQs(txt){const out=[];for(const line of String(txt).split('\n')){const p=line.split('|').map(s=>s.trim()).filter(Boolean);if(p.length<3)continue;let ans=-1;const opts=p.slice(1,5).map((o,i)=>{if(o.startsWith('*')){ans=i;return o.slice(1).trim()}return o});if(ans>=0)out.push({text:p[0],opts,ans})}return out}
 
@@ -126,7 +157,7 @@ let me=LS.get('tg_me',{name:'',joined:false});
 const G=p=>db.ref('game/'+p);
 
 /* ---------- shared rendering ---------- */
-function playersArr(){return Object.entries(PL).filter(([,p])=>p&&typeof p.name==='string'&&p.name).map(([pid,p])=>({pid,name:p.name.slice(0,24),score:+p.score||0,on:p.on!==false})).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name))}
+function playersArr(){return Object.entries(PL).filter(([,p])=>p&&typeof p.name==='string'&&p.name).map(([pid,p])=>({pid,name:p.name.slice(0,24),av:Number.isInteger(p.av)?p.av:0,score:+p.score||0,on:p.on!==false})).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name))}
 function ranked(ps){let r=0,prev=null;return ps.map((p,i)=>{if(p.score!==prev){r=i+1;prev=p.score}return {...p,rank:r}})}
 function renderBoard(){
   const b=$('#board'),ps=playersArr();
@@ -136,7 +167,7 @@ function renderBoard(){
     let st='';
     if(isHost&&S&&S.phase==='q'&&(p.pid in ANS))st='<span class="st" title="Answered">✓</span>';
     if(S&&S.phase==='reveal'&&res[p.pid]===S.correct)st='<span class="st">+'+PTS+'</span>';
-    return '<div class="chip'+(p.rank===1&&p.score>0?' first':'')+(p.pid===uid?' me':'')+(!p.on?' off':'')+'"><span class="rk">'+p.rank+'</span><span>'+esc(p.name)+'</span><span class="sc">'+p.score+'</span>'+st+'</div>'}).join('');
+    return '<div class="chip'+(p.rank===1&&p.score>0?' first':'')+(p.pid===uid?' me':'')+(!p.on?' off':'')+'"><span class="rk">'+p.rank+'</span>'+avImg(p.pid,p.av)+'<span>'+esc(p.name)+'</span><span class="sc">'+p.score+'</span>'+st+'</div>'}).join('');
 }
 function ringHTML(){return '<div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--line)" stroke-width="10"/><circle id="arc" cx="50" cy="50" r="44" fill="none" stroke="var(--squash)" stroke-width="10" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg><b id="secs">20</b></div>'}
 function optsHTML(opts,o){o=o||{};return '<div class="opts">'+opts.map((t,i)=>{
@@ -145,7 +176,17 @@ function optsHTML(opts,o){o=o||{};return '<div class="opts">'+opts.map((t,i)=>{
 function drawTimer(ms){const arc=$('#arc'),s=$('#secs');if(!arc||!s)return;const f=Math.max(0,Math.min(1,ms/QMS));arc.setAttribute('stroke-dashoffset',String(276.5*(1-f)));arc.setAttribute('stroke',ms<5000?'#d8343f':'var(--squash)');s.textContent=String(Math.ceil(Math.max(0,ms)/1000))}
 function setQC(){$('#qc').textContent=S&&(S.phase==='q'||S.phase==='reveal')?'Question '+((+S.qi||0)+1)+' of '+(+S.total||0):(isHost?'Host':'')}
 function curQ(){return S&&S.q&&Array.isArray(S.q.opts)?S.q:null}
-function render(){setQC();renderBoard();isHost?renderHost():renderPlayer()}
+let pending=false;
+function busy(){const a=document.activeElement;return !!(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT'&&a.type!=='file')&&$('#main').contains(a))}
+function render(){
+  setQC();renderBoard();
+  if(busy()){pending=true;return}
+  const keep={};['nm','hn','qt'].forEach(id=>{const el=document.getElementById(id);if(el)keep[id]=el.value});const d=$('main details'),open=d&&d.open;
+  isHost?renderHost():renderPlayer();
+  for(const[id,v]of Object.entries(keep)){const el=document.getElementById(id);if(el)el.value=v}
+  const d2=$('main details');if(d2&&open)d2.open=true;
+}
+document.addEventListener('focusout',()=>setTimeout(()=>{if(pending&&!busy()){pending=false;lastKey='';renderIfChanged()}},0));
 let lastKey='';
 function renderIfChanged(force){const k=JSON.stringify([S&&S.g,S&&S.phase,S&&S.qi,me.joined,isHost?[Object.keys(ANS).length,hostPlays(),playersArr().map(p=>p.pid+p.on).join()]:0]);if(force||k!==lastKey){lastKey=k;render()}else{setQC();renderBoard()}}
 
@@ -167,7 +208,7 @@ async function reveal(){
 }
 async function nextQ(){if(S.qi+1>=QS.length)await G('state').update({phase:'final',q:null,correct:null,results:null});else await askQ(S.qi+1,{answers:null})}
 async function endGame(){await G('state').update({phase:'final',q:null,correct:null,results:null})}
-async function toLobby(clearPlayers){const up={state:{g:newG(),phase:'lobby',qi:-1,total:QS.length},answers:null};if(clearPlayers)up.players=null;else for(const pid of Object.keys(PL))up['players/'+pid+'/score']=0;await G('').update(up)}
+async function toLobby(clearPlayers){const up={state:{g:newG(),phase:'lobby',qi:-1,total:QS.length},answers:null};if(clearPlayers){up.players=null;up.pics=null}else for(const pid of Object.keys(PL))up['players/'+pid+'/score']=0;await G('').update(up)}
 function hostPlays(){return !!(me.joined&&PL[uid]&&PL[uid].name)}
 function joinLink(){const u=new URL(location.href);u.search='';u.hash='';return u.toString()}
 function renderHost(){
@@ -177,17 +218,17 @@ function renderHost(){
     m.innerHTML='<h1>Gather round, it\'s trivia time</h1><p>Send everyone this link. They open it on their phone, type their name, and show up below.</p>'+
     '<div class="card"><div class="row"><input id="lnk" readonly value="'+esc(link)+'" style="flex:1 1 240px;font-size:16px"><button class="btn alt" id="cp">Copy link</button></div></div>'+
     '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Players ('+ps.length+')</h2><button class="btn" id="start"'+(n?'':' disabled')+'>Start game</button></div>'+
-    (ps.length?'<ul class="list">'+ps.map(p=>'<li><span>'+esc(p.name)+(p.on?'':' <span class="muted small">(away)</span>')+'</span><button class="x" data-rm="'+esc(p.pid)+'">Remove</button></li>').join('')+'</ul>':'<p class="muted" style="margin:12px 0 0">No one has joined yet.</p>')+'</div>'+
-    (hostPlays()?'<div class="card"><div class="row" style="justify-content:space-between"><span>You\'re playing too, as <b>'+esc(PL[uid].name)+'</b>. Answer on this screen.</span><button class="x" id="hq">Stop playing</button></div></div>':'<form class="card" id="hj"><label for="hn">Want to play too? Enter your name</label><div class="row"><input id="hn" maxlength="24" value="'+esc(me.name)+'" style="flex:1 1 200px"><button class="btn alt" type="submit">Play too</button></div></form>')+
+    (ps.length?'<ul class="list">'+ps.map(p=>'<li><span>'+avImg(p.pid,p.av)+' '+esc(p.name)+(p.on?'':' <span class="muted small">(away)</span>')+'</span><button class="x" data-rm="'+esc(p.pid)+'">Remove</button></li>').join('')+'</ul>':'<p class="muted" style="margin:12px 0 0">No one has joined yet.</p>')+'</div>'+
+    (hostPlays()?'<div class="card"><div class="row" style="justify-content:space-between"><span>You\'re playing too, as '+avImg(uid,PL[uid].av)+' <b>'+esc(PL[uid].name)+'</b>. Answer on this screen.</span><button class="x" id="hq">Stop playing</button></div></div>':'<form class="card" id="hj"><label for="hn">Want to play too? Enter your name</label><div class="row"><input id="hn" maxlength="24" value="'+esc(me.name)+'" style="flex:1 1 200px"><button class="btn alt" type="submit">Play too</button></div>'+avPicker()+'</form>')+
     '<p class="muted small">'+n+' questions · 20 seconds each · '+PTS+' points per correct answer</p>'+
     '<details class="card"><summary>Edit questions</summary><p class="small muted">One question per line: question | answer | answer | answer | answer. Put * in front of the correct one. 2 to 4 answers.</p><textarea id="qt" spellcheck="false">'+esc(qText)+'</textarea><div class="row" style="margin-top:10px"><button class="btn" id="saveq">Save questions</button><button class="btn alt" id="defq">Restore defaults</button><span class="small muted" id="qmsg"></span></div></details>';
     $('#cp').onclick=()=>{navigator.clipboard.writeText(link).then(()=>{$('#cp').textContent='Copied'},()=>{$('#lnk').select()})};
     $('#start').onclick=startGame;
-    if($('#hj'))$('#hj').onsubmit=e=>{e.preventDefault();const v=$('#hn').value.trim().slice(0,24);if(v)join(v)};
-    if($('#hq'))$('#hq').onclick=()=>{me.joined=false;LS.set('tg_me',me);G('players/'+uid).remove()};
-    m.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>G('players/'+b.dataset.rm).remove());
+    if($('#hj'))wireAv($('#hj'));if($('#hj'))$('#hj').onsubmit=e=>{e.preventDefault();const v=$('#hn').value.trim().slice(0,24);if(v)join(v)};
+    if($('#hq'))$('#hq').onclick=()=>{me.joined=false;LS.set('tg_me',me);G('players/'+uid).remove();G('pics/'+uid).remove()};
+    m.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{G('players/'+b.dataset.rm).remove();G('pics/'+b.dataset.rm).remove()});
     $('#saveq').onclick=()=>{const t=$('#qt').value;if(!parseQs(t).length){$('#qmsg').textContent='No valid questions found — check the * marks.';return}qText=t;QS=parseQs(t);LS.set('tg_qtext',t);lastKey='';render()};
-    $('#defq').onclick=()=>{qText=toText(DEFAULT);QS=parseQs(qText);LS.set('tg_qtext',qText);lastKey='';render()};
+    $('#defq').onclick=()=>{qText=toText(DEFAULT);$('#qt').value=qText;QS=parseQs(qText);LS.set('tg_qtext',qText);lastKey='';render()};
     return}
   const q=curQ();
   if(ph==='q'&&q){
@@ -199,12 +240,12 @@ function renderHost(){
   if(ph==='reveal'&&q){
     const last=S.qi+1>=QS.length,res=S.results||{};
     m.innerHTML='<div class="card"><div class="qtext" style="margin-bottom:16px">'+esc(q.text)+'</div>'+optsHTML(q.opts,{correct:S.correct,disabled:true})+'</div>'+
-    '<div class="card"><h2>This round</h2><ul class="list">'+ps.map(p=>{const c=res[p.pid];return '<li><span>'+esc(p.name)+'</span>'+(c==null?'<span class="tag">No answer</span>':c===S.correct?'<span class="tag ok">Correct +'+PTS+'</span>':'<span class="tag no">'+LET[c]+' — wrong</span>')+'</li>'}).join('')+'</ul></div>'+
+    '<div class="card"><h2>This round</h2><ul class="list">'+ps.map(p=>{const c=res[p.pid];return '<li><span>'+avImg(p.pid,p.av)+' '+esc(p.name)+'</span>'+(c==null?'<span class="tag">No answer</span>':c===S.correct?'<span class="tag ok">Correct +'+PTS+'</span>':'<span class="tag no">'+LET[c]+' — wrong</span>')+'</li>'}).join('')+'</ul></div>'+
     '<div class="row"><button class="btn" id="next">'+(last?'See final scores':'Next question')+'</button>'+(last?'':'<button class="btn alt" id="endg">End game</button>')+'</div>';
     $('#next').onclick=nextQ;if($('#endg'))$('#endg').onclick=endGame;return}
   const r=ranked(ps),top=r.filter(p=>p.rank===1&&p.score>0);
   m.innerHTML='<h1>Final scores</h1><div class="card">'+(top.length?'<p class="big">'+top.map(p=>esc(p.name)).join(' & ')+'</p><p style="text-align:center">'+(top.length>1?'tie for the win':'wins')+' with '+top[0].score+' points</p>':'<p>No points this time.</p>')+
-  '<ul class="list">'+r.map(p=>'<li><span>'+p.rank+'. '+esc(p.name)+'</span><b>'+p.score+'</b></li>').join('')+'</ul></div>'+
+  '<ul class="list">'+r.map(p=>'<li><span>'+p.rank+'. '+avImg(p.pid,p.av)+' '+esc(p.name)+'</span><b>'+p.score+'</b></li>').join('')+'</ul></div>'+
   '<div class="row"><button class="btn" id="again">Play again, same players</button><button class="btn alt" id="fresh">New game, clear players</button></div>';
   $('#again').onclick=()=>toLobby(false);$('#fresh').onclick=()=>toLobby(true);
 }
@@ -212,16 +253,16 @@ function renderHost(){
 /* ---------- PLAYER ---------- */
 let myPick=null; // {r:roundId,c}
 function picked(){return myPick&&S&&myPick.r===S.g+'_'+S.qi?myPick.c:null}
-async function join(name){me={name,joined:true};LS.set('tg_me',me);await G('players/'+uid).update({name,on:true});G('players/'+uid+'/on').onDisconnect().set(false)}
+async function join(name){const av=Number.isInteger(selAv)?selAv:0;me={name,av,joined:true};LS.set('tg_me',me);await G('players/'+uid).update({name,av,on:true});if(selPic)await G('pics/'+uid).set(selPic);else await G('pics/'+uid).remove();G('players/'+uid+'/on').onDisconnect().set(false)}
 function renderPlayer(){
   const m=$('#main');
   if(!me.joined||!PL[uid]||!PL[uid].name){
-    m.innerHTML='<h1>Gobble up some trivia</h1><form class="card" id="jf"><label for="nm">Your name</label><input id="nm" maxlength="24" autocomplete="nickname" value="'+esc(me.name)+'" required><div style="margin-top:14px"><button class="btn" type="submit">Join the game</button></div><p class="small muted" id="jm" style="margin:10px 0 0"></p></form><p class="muted">20 seconds per question. '+PTS+' points for every right answer. The host starts the game.</p>';
-    $('#jf').onsubmit=e=>{e.preventDefault();const v=$('#nm').value.trim().slice(0,24);if(!v)return;join(v).catch(()=>{$('#jm').textContent='Couldn\'t join — check your connection and try again.'})};
+    m.innerHTML='<h1>Gobble up some trivia</h1><form class="card" id="jf"><label for="nm">Your name</label><input id="nm" maxlength="24" autocomplete="nickname" value="'+esc(me.name)+'" required>'+avPicker()+'<div style="margin-top:14px"><button class="btn" type="submit">Join the game</button></div><p class="small muted" id="jm" style="margin:10px 0 0"></p></form><p class="muted">20 seconds per question. '+PTS+' points for every right answer. The host starts the game.</p>';
+    wireAv($('#jf'));$('#jf').onsubmit=e=>{e.preventDefault();const v=$('#nm').value.trim().slice(0,24);if(!v)return;join(v).catch(()=>{$('#jm').textContent='Couldn\'t join — check your connection and try again.'})};
     return}
   const ph=S?S.phase:'lobby',q=curQ();
   if(ph==='lobby'||!q&&ph!=='final'){
-    m.innerHTML='<div class="card"><h2>You\'re in, '+esc(PL[uid].name)+'!</h2><p>Waiting for the host to start. Grab a seat.</p><button class="x" id="chg">Not you? Change name</button></div>';
+    m.innerHTML='<div class="card">'+avImg(uid,PL[uid].av,'lg')+'<h2>You\'re in, '+esc(PL[uid].name)+'!</h2><p>Waiting for the host to start. Grab a seat.</p><button class="x" id="chg">Not you? Change name</button></div>';
     $('#chg').onclick=()=>{me.joined=false;LS.set('tg_me',me);G('players/'+uid+'/name').remove()};
     return}
   if(ph==='q'){
@@ -268,6 +309,7 @@ function fail(t){$('#main').innerHTML='<div class="card"><h2>Can\'t start the ga
     db.ref('.info/connected').on('value',s=>{if(s.val()===true&&me.joined){const r=G('players/'+uid+'/on');r.onDisconnect().set(false);G('players/'+uid).once('value').then(p=>{if(p.val()&&p.val().name)r.set(true)})}});
   }
   G('players').on('value',s=>{PL=s.val()||{};renderIfChanged()});
+  G('pics').on('value',s=>{PICS=s.val()||{};renderBoard();lastKey='';renderIfChanged()});
 })();
 let ansRef=null,ansPath='';
 function watchAnswers(){const p=S&&S.phase==='q'?'answers/'+roundId():'';if(p===ansPath)return;if(ansRef)ansRef.off();ansPath=p;ANS={};if(!p){ansRef=null;return}ansRef=G(p);ansRef.on('value',s=>{ANS=s.val()||{};renderIfChanged()})}
