@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thanksgiving Trivia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: loud, cheerful family game night
+   IDEA: a TV game-show scoreboard hung over the harvest table
+   PICTURE: the live question card with a big countdown ring
+   COLOUR and TYPE: cranberry field, squash and gold accents; Bungee display + Rubik
+   LAYOUT: sticky scoreboard band on top, one centred game column */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#1a0e10);--ink:light-dark(#2a1215,#f8ece6);--soft:light-dark(#f6ece8,#2a181b);--line:light-dark(#e6d3cc,#4a2d31);--muted:light-dark(#6e5357,#c9aeb2);--acc:light-dark(#8c1c2e,#ff9aa8);--cran:#8c1c2e;--squash:#e07a1f;--gold:#f2b632}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Rubik,system-ui,sans-serif;overflow-x:clip}
+.top{position:sticky;top:0;z-index:5;background:var(--cran);color:#fff;padding:10px max(4vw,12px) 12px;box-shadow:0 4px 14px #0005}
+.toprow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font:19px/1.1 Bungee,sans-serif}
+.qc{font-weight:700;color:var(--gold);font-size:15px}
+.board{display:flex;gap:8px;overflow-x:auto;padding-top:10px;scrollbar-width:thin}
+.chip{flex:none;display:flex;align-items:center;gap:8px;background:#ffffff1c;border-radius:999px;padding:5px 14px 5px 5px;white-space:nowrap}
+.chip .rk{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#ffffff2e;font-weight:700;font-size:13px}
+.chip.first .rk{background:var(--gold);color:#3a1a00}
+.chip .sc{font:17px Bungee,sans-serif;color:var(--gold)}
+.chip.me{box-shadow:inset 0 0 0 2px var(--gold)}
+.chip .st{font-size:14px}
+.chip.off{opacity:.55}
+.empty{opacity:.85;font-size:14px;padding:6px 2px}
+main{max-width:760px;margin:0 auto;padding:clamp(20px,4vw,44px) max(4vw,16px) 64px}
+h1,h2{font-family:Bungee,sans-serif;font-weight:400;line-height:1.08;text-wrap:balance;margin:0 0 12px;color:var(--acc)}
+h1{font-size:clamp(30px,6vw,46px)}h2{font-size:clamp(22px,4vw,30px)}
+p{margin:0 0 14px}.muted{color:var(--muted)}
+.card{background:var(--soft);border-radius:22px;padding:clamp(18px,3vw,28px);margin-bottom:18px}
+.qhead{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+.qtext{font-size:clamp(20px,3.4vw,27px);font-weight:700;line-height:1.25;text-wrap:balance}
+.ring{flex:none;width:92px;height:92px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font:30px Bungee,sans-serif}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.opt{display:flex;gap:12px;align-items:center;min-height:68px;border:0;border-radius:16px;color:#fff;font:500 18px/1.25 Rubik,sans-serif;text-align:left;padding:12px 16px;cursor:pointer;transition:transform .12s,opacity .2s}
+.opt:not(:disabled):hover{transform:translateY(-2px)}
+.opt:disabled{cursor:default}
+.opt i{font:normal 16px Bungee,sans-serif;width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:10px;background:#ffffff33}
+.opt.dim{opacity:.32}.opt.pick,.opt.right{box-shadow:0 0 0 4px var(--gold)}
+.opt.right i{background:var(--gold);color:#3a1a00}
+.msg{margin-top:16px;font-weight:700;font-size:18px;text-align:center}
+.big{font:clamp(40px,9vw,64px)/1 Bungee,sans-serif;color:var(--squash);text-align:center;margin:6px 0 10px}
+.btn{min-height:48px;padding:0 22px;border-radius:14px;border:0;background:var(--squash);color:#fff;font:700 17px Rubik,sans-serif;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--line)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,.opt:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,textarea{font:16px Rubik,sans-serif;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
+input{min-height:52px;font-size:19px}
+textarea{min-height:220px;font-size:14px;line-height:1.5}
+label{display:block;font-weight:700;margin-bottom:6px}
+ul.list{list-style:none;padding:0;margin:0}
+ul.list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line)}
+ul.list li:last-child{border:0}
+.tag{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--line);white-space:nowrap}
+.tag.ok{background:#2f7a3a;color:#fff}.tag.no{background:var(--cran);color:#fff}
+.x{background:none;border:0;color:var(--muted);font-size:14px;cursor:pointer;min-height:36px;text-decoration:underline}
+details summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.small{font-size:14px}
+@media(max-width:520px){.opts{grid-template-columns:minmax(0,1fr)}.ring{width:76px;height:76px}.ring b{font-size:24px}.qhead{gap:12px}}
+@media(prefers-reduced-motion:reduce){.opt{transition:none}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head><body>
+<header class="top">
+  <div class="toprow"><div class="brand">Thanksgiving Trivia</div><div class="qc" id="qc"></div></div>
+  <div class="board" id="board" aria-live="polite"><div class="empty">Scores appear here once players join.</div></div>
+</header>
+<main id="main"><div class="card"><h2>Connecting…</h2><p class="muted">Getting the game room ready.</p></div></main>
+<script>
+/* ===== Firebase config ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDHiPWm295khheXLb8Ewwba5cb5gV9PAhw",
+  authDomain: "thanksgiving-trivia-e204a.firebaseapp.com",
+  databaseURL: "https://thanksgiving-trivia-e204a-default-rtdb.firebaseio.com",
+  projectId: "thanksgiving-trivia-e204a",
+  storageBucket: "thanksgiving-trivia-e204a.firebasestorage.app",
+  messagingSenderId: "492075060442",
+  appId: "1:492075060442:web:25c32c99355f46fd4369e3",
+  measurementId: "G-CDCEBFWJ37"
+};
+/* ============================================================ */
+{
+const DEFAULT=[
+["In what year is the first Thanksgiving feast traditionally dated?","1492","1607","*1621","1776"],
+["Which ship carried the Pilgrims to America?","The Santa Maria","*The Mayflower","The Endeavour","The Bounty"],
+["Which Native people shared the 1621 harvest feast with the Pilgrims?","The Cherokee","The Iroquois","*The Wampanoag","The Lakota"],
+["About how long did the 1621 harvest celebration last?","One afternoon","*Three days","One week","A full month"],
+["Which of these was almost certainly NOT served at the 1621 feast?","Venison","Wildfowl","Corn","*Pumpkin pie"],
+["Which president made Thanksgiving a national holiday in 1863?","George Washington","*Abraham Lincoln","Ulysses S. Grant","Theodore Roosevelt"],
+["Which writer campaigned for 17 years to make Thanksgiving a national holiday?","Louisa May Alcott","*Sarah Josepha Hale","Harriet Beecher Stowe","Emily Dickinson"],
+["Which president moved Thanksgiving a week earlier in 1939, nicknamed \"Franksgiving\"?","*Franklin D. Roosevelt","Herbert Hoover","Harry Truman","Calvin Coolidge"],
+["Thanksgiving in the U.S. falls on which Thursday of November?","The first","The third","*The fourth","The last"],
+["In what year was the first Macy's Thanksgiving Day Parade?","1904","*1924","1946","1952"],
+["Which NFL team has hosted a Thanksgiving Day game nearly every year since 1934?","Dallas Cowboys","Green Bay Packers","*Detroit Lions","Chicago Bears"],
+["What is a male turkey called?","A buck","*A tom","A drake","A rooster"],
+["What is a baby turkey called?","A chick","A gosling","*A poult","A kit"],
+["About how fast can a wild turkey run?","5 mph","12 mph","*25 mph","45 mph"],
+["Which state raises the most turkeys?","Texas","*Minnesota","Iowa","Georgia"],
+["Which state grows the most cranberries?","Massachusetts","New Jersey","Oregon","*Wisconsin"],
+["Which company's test kitchen created green bean casserole in 1955?","Kraft","*Campbell's","Betty Crocker","Libby's"],
+["When does Canada celebrate Thanksgiving?","*The second Monday of October","The first Thursday of November","The last Monday of September","The same day as the U.S."]
+];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const COLORS=['#8c1c2e','#c2611a','#5c6b1c','#2f5d8a'],LET=['A','B','C','D'],QMS=20000,PTS=10;
+const toText=a=>a.map(r=>r.join(' | ')).join('\n');
+function parseQs(txt){const out=[];for(const line of String(txt).split('\n')){const p=line.split('|').map(s=>s.trim()).filter(Boolean);if(p.length<3)continue;let ans=-1;const opts=p.slice(1,5).map((o,i)=>{if(o.startsWith('*')){ans=i;return o.slice(1).trim()}return o});if(ans>=0)out.push({text:p[0],opts,ans})}return out}
+
+const wantHost=new URLSearchParams(location.search).has('host');
+let db=null,uid=null,isHost=false,offset=0;
+const now=()=>Date.now()+offset;
+let S=null;            // game/state
+let PL={};             // game/players
+let ANS={};            // answers for current round (host only)
+let me=LS.get('tg_me',{name:'',joined:false});
+const G=p=>db.ref('game/'+p);
+
+/* ---------- shared rendering ---------- */
+function playersArr(){return Object.entries(PL).filter(([,p])=>p&&typeof p.name==='string'&&p.name).map(([pid,p])=>({pid,name:p.name.slice(0,24),score:+p.score||0,on:p.on!==false})).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name))}
+function ranked(ps){let r=0,prev=null;return ps.map((p,i)=>{if(p.score!==prev){r=i+1;prev=p.score}return {...p,rank:r}})}
+function renderBoard(){
+  const b=$('#board'),ps=playersArr();
+  if(!ps.length){b.innerHTML='<div class="empty">Scores appear here once players join.</div>';return}
+  const res=S&&S.phase==='reveal'&&S.results||{};
+  b.innerHTML=ranked(ps).map(p=>{
+    let st='';
+    if(isHost&&S&&S.phase==='q'&&(p.pid in ANS))st='<span class="st" title="Answered">✓</span>';
+    if(S&&S.phase==='reveal'&&res[p.pid]===S.correct)st='<span class="st">+'+PTS+'</span>';
+    return '<div class="chip'+(p.rank===1&&p.score>0?' first':'')+(p.pid===uid&&!isHost?' me':'')+(!p.on?' off':'')+'"><span class="rk">'+p.rank+'</span><span>'+esc(p.name)+'</span><span class="sc">'+p.score+'</span>'+st+'</div>'}).join('');
+}
+function ringHTML(){return '<div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--line)" stroke-width="10"/><circle id="arc" cx="50" cy="50" r="44" fill="none" stroke="var(--squash)" stroke-width="10" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg><b id="secs">20</b></div>'}
+function optsHTML(opts,o){o=o||{};return '<div class="opts">'+opts.map((t,i)=>{
+  let cls='opt';if(o.correct!=null){cls+=i===o.correct?' right':' dim'}else if(o.pick!=null){cls+=i===o.pick?' pick':' dim'}
+  return '<button class="'+cls+'" data-c="'+i+'" style="background:'+COLORS[i%4]+'"'+(o.disabled?' disabled':'')+'><i>'+LET[i]+'</i><span>'+esc(t)+'</span></button>'}).join('')+'</div>'}
+function drawTimer(ms){const arc=$('#arc'),s=$('#secs');if(!arc||!s)return;const f=Math.max(0,Math.min(1,ms/QMS));arc.setAttribute('stroke-dashoffset',String(276.5*(1-f)));arc.setAttribute('stroke',ms<5000?'#d8343f':'var(--squash)');s.textContent=String(Math.ceil(Math.max(0,ms)/1000))}
+function setQC(){$('#qc').textContent=S&&(S.phase==='q'||S.phase==='reveal')?'Question '+((+S.qi||0)+1)+' of '+(+S.total||0):(isHost?'Host':'')}
+function curQ(){return S&&S.q&&Array.isArray(S.q.opts)?S.q:null}
+function render(){setQC();renderBoard();isHost?renderHost():renderPlayer()}
+let lastKey='';
+function renderIfChanged(force){const k=JSON.stringify([S&&S.g,S&&S.phase,S&&S.qi,me.joined,isHost?[Object.keys(ANS).length,playersArr().map(p=>p.pid+p.on).join()]:0]);if(force||k!==lastKey){lastKey=k;render()}else{setQC();renderBoard()}}
+
+/* ---------- HOST ---------- */
+let QS=[],qText=LS.get('tg_qtext',toText(DEFAULT)),revealing=false;
+QS=parseQs(qText);if(!QS.length){qText=toText(DEFAULT);QS=parseQs(qText)}
+const roundId=()=>S.g+'_'+S.qi;
+function newG(){return Date.now().toString(36)}
+async function askQ(i,extra){const q=QS[i];const up=Object.assign({'state':{g:S.g,phase:'q',qi:i,total:QS.length,q:{text:q.text,opts:q.opts},endsAt:now()+QMS}},extra||{});await G('').update(up)}
+async function startGame(){QS=parseQs(qText);if(!QS.length)return;const up={answers:null};for(const pid of Object.keys(PL))up['players/'+pid+'/score']=0;S={g:newG()};await askQ(0,up)}
+async function reveal(){
+  if(!S||S.phase!=='q'||revealing)return;revealing=true;
+  try{
+    const snap=await G('answers/'+roundId()).get();const a=snap.val()||{};const q=QS[S.qi];const up={};const results={};
+    for(const[pid,c]of Object.entries(a)){if(!PL[pid])continue;results[pid]=c;if(c===q.ans)up['players/'+pid+'/score']=(+PL[pid].score||0)+PTS}
+    up['state/phase']='reveal';up['state/correct']=q.ans;up['state/results']=results;
+    await G('').update(up);
+  }finally{revealing=false}
+}
+async function nextQ(){if(S.qi+1>=QS.length)await G('state').update({phase:'final',q:null,correct:null,results:null});else await askQ(S.qi+1,{answers:null})}
+async function toLobby(clearPlayers){const up={state:{g:newG(),phase:'lobby',qi:-1,total:QS.length},answers:null};if(clearPlayers)up.players=null;else for(const pid of Object.keys(PL))up['players/'+pid+'/score']=0;await G('').update(up)}
+function joinLink(){const u=new URL(location.href);u.search='';u.hash='';return u.toString()}
+function renderHost(){
+  const m=$('#main'),ps=playersArr(),ph=S?S.phase:'lobby';
+  if(ph==='lobby'){
+    const n=parseQs(qText).length,link=joinLink();
+    m.innerHTML='<h1>Gather round, it\'s trivia time</h1><p>Send everyone this link. They open it on their phone, type their name, and show up below.</p>'+
+    '<div class="card"><div class="row"><input id="lnk" readonly value="'+esc(link)+'" style="flex:1 1 240px;font-size:16px"><button class="btn alt" id="cp">Copy link</button></div></div>'+
+    '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Players ('+ps.length+')</h2><button class="btn" id="start"'+(n?'':' disabled')+'>Start game</button></div>'+
+    (ps.length?'<ul class="list">'+ps.map(p=>'<li><span>'+esc(p.name)+(p.on?'':' <span class="muted small">(away)</span>')+'</span><button class="x" data-rm="'+esc(p.pid)+'">Remove</button></li>').join('')+'</ul>':'<p class="muted" style="margin:12px 0 0">No one has joined yet.</p>')+'</div>'+
+    '<p class="muted small">'+n+' questions · 20 seconds each · '+PTS+' points per correct answer</p>'+
+    '<details class="card"><summary>Edit questions</summary><p class="small muted">One question per line: question | answer | answer | answer | answer. Put * in front of the correct one. 2 to 4 answers.</p><textarea id="qt" spellcheck="false">'+esc(qText)+'</textarea><div class="row" style="margin-top:10px"><button class="btn" id="saveq">Save questions</button><button class="btn alt" id="defq">Restore defaults</button><span class="small muted" id="qmsg"></span></div></details>';
+    $('#cp').onclick=()=>{navigator.clipboard.writeText(link).then(()=>{$('#cp').textContent='Copied'},()=>{$('#lnk').select()})};
+    $('#start').onclick=startGame;
+    m.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>G('players/'+b.dataset.rm).remove());
+    $('#saveq').onclick=()=>{const t=$('#qt').value;if(!parseQs(t).length){$('#qmsg').textContent='No valid questions found — check the * marks.';return}qText=t;QS=parseQs(t);LS.set('tg_qtext',t);lastKey='';render()};
+    $('#defq').onclick=()=>{qText=toText(DEFAULT);QS=parseQs(qText);LS.set('tg_qtext',qText);lastKey='';render()};
+    return}
+  const q=curQ();
+  if(ph==='q'&&q){
+    const on=ps.filter(p=>p.on),done=on.filter(p=>p.pid in ANS).length;
+    m.innerHTML='<div class="card"><div class="qhead">'+ringHTML()+'<div class="qtext">'+esc(q.text)+'</div></div>'+optsHTML(q.opts,{disabled:true})+'<p class="msg">'+done+' of '+on.length+' answered</p></div><div class="row"><button class="btn alt" id="stop">End timer now</button></div>';
+    $('#stop').onclick=reveal;drawTimer(S.endsAt-now());return}
+  if(ph==='reveal'&&q){
+    const last=S.qi+1>=QS.length,res=S.results||{};
+    m.innerHTML='<div class="card"><div class="qtext" style="margin-bottom:16px">'+esc(q.text)+'</div>'+optsHTML(q.opts,{correct:S.correct,disabled:true})+'</div>'+
+    '<div class="card"><h2>This round</h2><ul class="list">'+ps.map(p=>{const c=res[p.pid];return '<li><span>'+esc(p.name)+'</span>'+(c==null?'<span class="tag">No answer</span>':c===S.correct?'<span class="tag ok">Correct +'+PTS+'</span>':'<span class="tag no">'+LET[c]+' — wrong</span>')+'</li>'}).join('')+'</ul></div>'+
+    '<div class="row"><button class="btn" id="next">'+(last?'See final scores':'Next question')+'</button></div>';
+    $('#next').onclick=nextQ;return}
+  const r=ranked(ps),top=r.filter(p=>p.rank===1&&p.score>0);
+  m.innerHTML='<h1>Final scores</h1><div class="card">'+(top.length?'<p class="big">'+top.map(p=>esc(p.name)).join(' & ')+'</p><p style="text-align:center">'+(top.length>1?'tie for the win':'wins')+' with '+top[0].score+' points</p>':'<p>No points this time.</p>')+
+  '<ul class="list">'+r.map(p=>'<li><span>'+p.rank+'. '+esc(p.name)+'</span><b>'+p.score+'</b></li>').join('')+'</ul></div>'+
+  '<div class="row"><button class="btn" id="again">Play again, same players</button><button class="btn alt" id="fresh">New game, clear players</button></div>';
+  $('#again').onclick=()=>toLobby(false);$('#fresh').onclick=()=>toLobby(true);
+}
+
+/* ---------- PLAYER ---------- */
+let myPick=null; // {r:roundId,c}
+function picked(){return myPick&&S&&myPick.r===S.g+'_'+S.qi?myPick.c:null}
+async function join(name){me={name,joined:true};LS.set('tg_me',me);await G('players/'+uid).update({name,on:true});G('players/'+uid+'/on').onDisconnect().set(false)}
+function renderPlayer(){
+  const m=$('#main');
+  if(!me.joined||!PL[uid]||!PL[uid].name){
+    m.innerHTML='<h1>Gobble up some trivia</h1><form class="card" id="jf"><label for="nm">Your name</label><input id="nm" maxlength="24" autocomplete="nickname" value="'+esc(me.name)+'" required><div style="margin-top:14px"><button class="btn" type="submit">Join the game</button></div><p class="small muted" id="jm" style="margin:10px 0 0"></p></form><p class="muted">20 seconds per question. '+PTS+' points for every right answer. The host starts the game.</p>';
+    $('#jf').onsubmit=e=>{e.preventDefault();const v=$('#nm').value.trim().slice(0,24);if(!v)return;join(v).catch(()=>{$('#jm').textContent='Couldn\'t join — check your connection and try again.'})};
+    return}
+  const ph=S?S.phase:'lobby',q=curQ();
+  if(ph==='lobby'||!q&&ph!=='final'){
+    m.innerHTML='<div class="card"><h2>You\'re in, '+esc(PL[uid].name)+'!</h2><p>Waiting for the host to start. Grab a seat.</p><button class="x" id="chg">Not you? Change name</button></div>';
+    $('#chg').onclick=()=>{me.joined=false;LS.set('tg_me',me);G('players/'+uid+'/name').remove()};
+    return}
+  if(ph==='q'){
+    const pk=picked(),over=S.endsAt<=now();
+    m.innerHTML='<div class="card"><div class="qhead">'+ringHTML()+'<div class="qtext">'+esc(q.text)+'</div></div>'+optsHTML(q.opts,{pick:pk,disabled:pk!=null||over})+'<p class="msg">'+(pk!=null?'Answer locked in. Fingers crossed!':over?'Time\'s up!':'Tap your answer')+'</p></div>';
+    if(pk==null&&!over)m.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(S.endsAt<=now())return;const r=S.g+'_'+S.qi,c=+b.dataset.c;myPick={r,c};G('answers/'+r+'/'+uid).set(c).catch(()=>{});renderPlayer()});
+    drawTimer(S.endsAt-now());return}
+  if(ph==='reveal'){
+    const pk=(S.results||{})[uid]??picked(),ok=pk!=null&&pk===S.correct;
+    m.innerHTML='<div class="card"><div class="qtext" style="margin-bottom:16px">'+esc(q.text)+'</div>'+optsHTML(q.opts,{correct:+S.correct,disabled:true})+
+    '<p class="big">'+(ok?'+'+PTS:pk==null?'No answer':'Not this time')+'</p><p style="text-align:center" class="muted">'+(pk!=null&&!ok?'You picked '+LET[pk]+'. ':'')+'Next question coming up…</p></div>';
+    return}
+  const r=ranked(playersArr()),mine=r.find(p=>p.pid===uid),top=r.filter(p=>p.rank===1&&p.score>0);
+  m.innerHTML='<h1>That\'s a wrap</h1><div class="card">'+(top.length?'<p class="big">'+top.map(p=>esc(p.name)).join(' & ')+'</p><p style="text-align:center">'+(top.length>1?'tie for the win':'takes the crown')+'</p>':'')+
+  (mine?'<p style="text-align:center;font-weight:700">You finished #'+mine.rank+' with '+mine.score+' points.</p>':'')+'</div><p class="muted">Stay on this page — the host may start another round.</p>';
+}
+
+/* ---------- loop ---------- */
+setInterval(()=>{
+  if(!S||S.phase!=='q')return;
+  if(isHost){const on=playersArr().filter(p=>p.on);const all=on.length>0&&on.every(p=>p.pid in ANS);if(now()>=S.endsAt||all)reveal()}
+  else if(picked()==null&&S.endsAt<=now()&&document.querySelector('.opt:not(:disabled)'))renderPlayer();
+},250);
+(function frame(){if(S&&S.phase==='q')drawTimer(S.endsAt-now());requestAnimationFrame(frame)})();
+
+/* ---------- connect ---------- */
+function fail(t){$('#main').innerHTML='<div class="card"><h2>Can\'t start the game</h2><p>'+esc(t)+'</p></div>'}
+(async()=>{
+  if(!window.firebase)return fail('Firebase didn\'t load. Check your internet connection and reload.');
+  if(String(firebaseConfig.apiKey).includes('PASTE'))return fail('Paste your Firebase config into index.html (see STEP 1 at the top of the script).');
+  try{firebase.initializeApp(firebaseConfig);db=firebase.database();const cred=await firebase.auth().signInAnonymously();uid=cred.user.uid}
+  catch(e){return fail('Couldn\'t connect to Firebase: '+(e&&e.message||e)+'. Make sure Anonymous sign-in is turned on.')}
+  db.ref('.info/serverTimeOffset').on('value',s=>{offset=+s.val()||0});
+  if(wantHost){
+    const hs=await G('host').get();
+    if(!hs.exists()){try{await G('host').set(uid)}catch(e){}}
+    const h2=await G('host').get();isHost=h2.val()===uid;
+    if(!isHost)return fail('Someone else is already the host on another device. To take over, delete the "host" entry under "game" in your Firebase Realtime Database, then reload.');
+    const st=await G('state').get();if(!st.exists())await G('state').set({g:newG(),phase:'lobby',qi:-1,total:QS.length});
+    G('state').on('value',s=>{S=s.val();if(S&&S.phase==='q'){if(!QS[S.qi]||QS[S.qi].text!==(S.q&&S.q.text)){toLobby(false);return}}watchAnswers();renderIfChanged()});
+  }else{
+    G('state').on('value',s=>{S=s.val();renderIfChanged()});
+    db.ref('.info/connected').on('value',s=>{if(s.val()===true&&me.joined){const r=G('players/'+uid+'/on');r.onDisconnect().set(false);G('players/'+uid).once('value').then(p=>{if(p.val()&&p.val().name)r.set(true)})}});
+  }
+  G('players').on('value',s=>{PL=s.val()||{};renderIfChanged()});
+})();
+let ansRef=null,ansPath='';
+function watchAnswers(){const p=S&&S.phase==='q'?'answers/'+roundId():'';if(p===ansPath)return;if(ansRef)ansRef.off();ansPath=p;ANS={};if(!p){ansRef=null;return}ansRef=G(p);ansRef.on('value',s=>{ANS=s.val()||{};renderIfChanged()})}
+}
+</script>
+</body></html>
