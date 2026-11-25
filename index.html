@@ -136,7 +136,7 @@ function renderBoard(){
     let st='';
     if(isHost&&S&&S.phase==='q'&&(p.pid in ANS))st='<span class="st" title="Answered">✓</span>';
     if(S&&S.phase==='reveal'&&res[p.pid]===S.correct)st='<span class="st">+'+PTS+'</span>';
-    return '<div class="chip'+(p.rank===1&&p.score>0?' first':'')+(p.pid===uid&&!isHost?' me':'')+(!p.on?' off':'')+'"><span class="rk">'+p.rank+'</span><span>'+esc(p.name)+'</span><span class="sc">'+p.score+'</span>'+st+'</div>'}).join('');
+    return '<div class="chip'+(p.rank===1&&p.score>0?' first':'')+(p.pid===uid?' me':'')+(!p.on?' off':'')+'"><span class="rk">'+p.rank+'</span><span>'+esc(p.name)+'</span><span class="sc">'+p.score+'</span>'+st+'</div>'}).join('');
 }
 function ringHTML(){return '<div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--line)" stroke-width="10"/><circle id="arc" cx="50" cy="50" r="44" fill="none" stroke="var(--squash)" stroke-width="10" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg><b id="secs">20</b></div>'}
 function optsHTML(opts,o){o=o||{};return '<div class="opts">'+opts.map((t,i)=>{
@@ -147,7 +147,7 @@ function setQC(){$('#qc').textContent=S&&(S.phase==='q'||S.phase==='reveal')?'Qu
 function curQ(){return S&&S.q&&Array.isArray(S.q.opts)?S.q:null}
 function render(){setQC();renderBoard();isHost?renderHost():renderPlayer()}
 let lastKey='';
-function renderIfChanged(force){const k=JSON.stringify([S&&S.g,S&&S.phase,S&&S.qi,me.joined,isHost?[Object.keys(ANS).length,playersArr().map(p=>p.pid+p.on).join()]:0]);if(force||k!==lastKey){lastKey=k;render()}else{setQC();renderBoard()}}
+function renderIfChanged(force){const k=JSON.stringify([S&&S.g,S&&S.phase,S&&S.qi,me.joined,isHost?[Object.keys(ANS).length,hostPlays(),playersArr().map(p=>p.pid+p.on).join()]:0]);if(force||k!==lastKey){lastKey=k;render()}else{setQC();renderBoard()}}
 
 /* ---------- HOST ---------- */
 let QS=[],qText=LS.get('tg_qtext',toText(DEFAULT)),revealing=false;
@@ -167,6 +167,7 @@ async function reveal(){
 }
 async function nextQ(){if(S.qi+1>=QS.length)await G('state').update({phase:'final',q:null,correct:null,results:null});else await askQ(S.qi+1,{answers:null})}
 async function toLobby(clearPlayers){const up={state:{g:newG(),phase:'lobby',qi:-1,total:QS.length},answers:null};if(clearPlayers)up.players=null;else for(const pid of Object.keys(PL))up['players/'+pid+'/score']=0;await G('').update(up)}
+function hostPlays(){return !!(me.joined&&PL[uid]&&PL[uid].name)}
 function joinLink(){const u=new URL(location.href);u.search='';u.hash='';return u.toString()}
 function renderHost(){
   const m=$('#main'),ps=playersArr(),ph=S?S.phase:'lobby';
@@ -176,18 +177,22 @@ function renderHost(){
     '<div class="card"><div class="row"><input id="lnk" readonly value="'+esc(link)+'" style="flex:1 1 240px;font-size:16px"><button class="btn alt" id="cp">Copy link</button></div></div>'+
     '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Players ('+ps.length+')</h2><button class="btn" id="start"'+(n?'':' disabled')+'>Start game</button></div>'+
     (ps.length?'<ul class="list">'+ps.map(p=>'<li><span>'+esc(p.name)+(p.on?'':' <span class="muted small">(away)</span>')+'</span><button class="x" data-rm="'+esc(p.pid)+'">Remove</button></li>').join('')+'</ul>':'<p class="muted" style="margin:12px 0 0">No one has joined yet.</p>')+'</div>'+
+    (hostPlays()?'<div class="card"><div class="row" style="justify-content:space-between"><span>You\'re playing too, as <b>'+esc(PL[uid].name)+'</b>. Answer on this screen.</span><button class="x" id="hq">Stop playing</button></div></div>':'<form class="card" id="hj"><label for="hn">Want to play too? Enter your name</label><div class="row"><input id="hn" maxlength="24" value="'+esc(me.name)+'" style="flex:1 1 200px"><button class="btn alt" type="submit">Play too</button></div></form>')+
     '<p class="muted small">'+n+' questions · 20 seconds each · '+PTS+' points per correct answer</p>'+
     '<details class="card"><summary>Edit questions</summary><p class="small muted">One question per line: question | answer | answer | answer | answer. Put * in front of the correct one. 2 to 4 answers.</p><textarea id="qt" spellcheck="false">'+esc(qText)+'</textarea><div class="row" style="margin-top:10px"><button class="btn" id="saveq">Save questions</button><button class="btn alt" id="defq">Restore defaults</button><span class="small muted" id="qmsg"></span></div></details>';
     $('#cp').onclick=()=>{navigator.clipboard.writeText(link).then(()=>{$('#cp').textContent='Copied'},()=>{$('#lnk').select()})};
     $('#start').onclick=startGame;
+    if($('#hj'))$('#hj').onsubmit=e=>{e.preventDefault();const v=$('#hn').value.trim().slice(0,24);if(v)join(v)};
+    if($('#hq'))$('#hq').onclick=()=>{me.joined=false;LS.set('tg_me',me);G('players/'+uid).remove()};
     m.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>G('players/'+b.dataset.rm).remove());
     $('#saveq').onclick=()=>{const t=$('#qt').value;if(!parseQs(t).length){$('#qmsg').textContent='No valid questions found — check the * marks.';return}qText=t;QS=parseQs(t);LS.set('tg_qtext',t);lastKey='';render()};
     $('#defq').onclick=()=>{qText=toText(DEFAULT);QS=parseQs(qText);LS.set('tg_qtext',qText);lastKey='';render()};
     return}
   const q=curQ();
   if(ph==='q'&&q){
-    const on=ps.filter(p=>p.on),done=on.filter(p=>p.pid in ANS).length;
-    m.innerHTML='<div class="card"><div class="qhead">'+ringHTML()+'<div class="qtext">'+esc(q.text)+'</div></div>'+optsHTML(q.opts,{disabled:true})+'<p class="msg">'+done+' of '+on.length+' answered</p></div><div class="row"><button class="btn alt" id="stop">End timer now</button></div>';
+    const on=ps.filter(p=>p.on),done=on.filter(p=>p.pid in ANS).length,hp=hostPlays(),pk=hp?(ANS[uid]??picked()):null,over=S.endsAt<=now();
+    m.innerHTML='<div class="card"><div class="qhead">'+ringHTML()+'<div class="qtext">'+esc(q.text)+'</div></div>'+optsHTML(q.opts,{pick:pk,disabled:!hp||pk!=null||over})+'<p class="msg">'+(hp?(pk!=null?'Your answer is locked in · ':'Tap your answer · '):'')+done+' of '+on.length+' answered</p></div><div class="row"><button class="btn alt" id="stop">End timer now</button></div>';
+    if(hp&&pk==null&&!over)m.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(S.endsAt<=now())return;const r=S.g+'_'+S.qi,c=+b.dataset.c;myPick={r,c};G('answers/'+r+'/'+uid).set(c).catch(()=>{});lastKey='';render()});
     $('#stop').onclick=reveal;drawTimer(S.endsAt-now());return}
   if(ph==='reveal'&&q){
     const last=S.qi+1>=QS.length,res=S.results||{};
@@ -253,6 +258,7 @@ function fail(t){$('#main').innerHTML='<div class="card"><h2>Can\'t start the ga
     if(!hs.exists()){try{await G('host').set(uid)}catch(e){}}
     const h2=await G('host').get();isHost=h2.val()===uid;
     if(!isHost)return fail('Someone else is already the host on another device. To take over, delete the "host" entry under "game" in your Firebase Realtime Database, then reload.');
+    db.ref('.info/connected').on('value',s=>{if(s.val()===true&&me.joined){const r=G('players/'+uid+'/on');r.onDisconnect().set(false);G('players/'+uid).once('value').then(p=>{if(p.val()&&p.val().name)r.set(true)})}});
     const st=await G('state').get();if(!st.exists())await G('state').set({g:newG(),phase:'lobby',qi:-1,total:QS.length});
     G('state').on('value',s=>{S=s.val();if(S&&S.phase==='q'){if(!QS[S.qi]||QS[S.qi].text!==(S.q&&S.q.text)){toLobby(false);return}}watchAnswers();renderIfChanged()});
   }else{
