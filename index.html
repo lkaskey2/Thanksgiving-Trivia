@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Thanksgiving Trivia</title>
+<title>Thanksgiving Trivia Time</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -77,16 +77,63 @@ details summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;alig
 .small{font-size:14px}
 @media(max-width:520px){.opts{grid-template-columns:minmax(0,1fr)}.ring{width:76px;height:76px}.ring b{font-size:24px}.qhead{gap:12px}}
 @media(prefers-reduced-motion:reduce){.opt{transition:none}}
+
+/* turkeys, leaves, shimmer */
+main{position:relative;z-index:1}
+.brand{background:linear-gradient(90deg,#fff 0%,#fff 35%,var(--gold) 50%,#fff 65%,#fff 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 3.5s linear infinite}
+@keyframes shine{from{background-position:100% 0}to{background-position:-150% 0}}
+.leaves{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.leaf{position:absolute;top:-40px;width:28px;height:28px;opacity:.5;animation:fall linear infinite}
+@keyframes fall{to{transform:translate(var(--dx),112vh) rotate(var(--r))}}
+.stage{position:relative;z-index:1;max-width:760px;height:230px;margin:0 auto 48px;overflow-x:clip;overflow-y:visible}
+.ground{position:absolute;left:0;right:0;bottom:0;height:26px;border-radius:14px;background:repeating-linear-gradient(100deg,#d9a441 0 12px,#c48a2c 12px 24px)}
+.tk{position:absolute;bottom:16px;width:110px;transition:left 3s linear}
+.tk svg{width:110px;height:110px;display:block;transition:transform .3s}
+.t1{left:-30%}.t2{left:68%}
+.t2 svg{transform:scaleX(-1)}
+.t1.flip svg{transform:scaleX(-1)}
+.leg1,.leg2{transform-box:fill-box;transform-origin:50% 0}
+.walk svg{animation:bob .4s ease-in-out infinite}
+.walk .leg1{animation:swing .4s ease-in-out infinite}.walk .leg2{animation:swing .4s ease-in-out infinite reverse}
+.laugh svg{animation:hop .35s ease-in-out 4}
+@keyframes bob{50%{translate:0 -5px}}
+@keyframes swing{0%,100%{rotate:-20deg}50%{rotate:20deg}}
+@keyframes hop{50%{translate:0 -14px}}
+.bubble{position:absolute;bottom:116px;left:6px;width:max-content;max-width:min(300px,58vw);background:#fff;color:#2a1215;border:3px solid var(--cran);border-radius:16px;padding:8px 12px;font:700 16px/1.3 Rubik,sans-serif;opacity:0;transform:scale(.6);transform-origin:bottom left;transition:opacity .25s,transform .25s}
+.t2 .bubble{left:auto;right:6px;transform-origin:bottom right}
+.bubble::after{content:'';position:absolute;bottom:-17px;left:24px;border:8px solid transparent;border-top-color:var(--cran)}
+.t2 .bubble::after{left:auto;right:24px}
+.bubble.show{opacity:1;transform:scale(1)}
+@media(max-width:520px){.tk,.tk svg{width:84px;height:84px}.bubble{bottom:90px;font-size:15px}.stage{height:200px}}
+@media(prefers-reduced-motion:reduce){.leaves{display:none}.tk{transition:none}.walk svg,.walk .leg1,.walk .leg2,.laugh svg,.brand{animation:none}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head><body>
 <header class="top">
-  <div class="toprow"><div class="brand">Thanksgiving Trivia</div><div class="qc" id="qc"></div></div>
+  <div class="toprow"><div class="brand">Thanksgiving Trivia Time</div><div class="qc" id="qc"></div></div>
   <div class="board" id="board" aria-live="polite"><div class="empty">Scores appear here once players join.</div></div>
 </header>
 <main id="main"><div class="card"><h2>Connecting…</h2><p class="muted">Getting the game room ready.</p></div></main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="turkey" viewBox="0 0 120 120">
+<g transform="translate(46 66)"><ellipse rx="11" ry="40" fill="#8c1c2e" transform="rotate(-62) translate(0 -26)"/><ellipse rx="11" ry="42" fill="#e07a1f" transform="rotate(-31) translate(0 -26)"/><ellipse rx="11" ry="44" fill="#f2b632" transform="translate(0 -26)"/><ellipse rx="11" ry="42" fill="#e07a1f" transform="rotate(31) translate(0 -26)"/><ellipse rx="11" ry="40" fill="#8c1c2e" transform="rotate(62) translate(0 -26)"/>
+<ellipse rx="7" ry="26" fill="#c2611a" transform="rotate(-40) translate(0 -18)"/><ellipse rx="7" ry="28" fill="#8c1c2e" transform="translate(0 -18)"/><ellipse rx="7" ry="26" fill="#c2611a" transform="rotate(40) translate(0 -18)"/></g>
+<g class="leg1"><path d="M52 94 L50 112 M50 112 l-6 3 M50 112 l5 3" stroke="#e0a020" stroke-width="4" stroke-linecap="round" fill="none"/></g>
+<g class="leg2"><path d="M64 94 L66 112 M66 112 l-6 3 M66 112 l5 3" stroke="#e0a020" stroke-width="4" stroke-linecap="round" fill="none"/></g>
+<ellipse cx="57" cy="76" rx="27" ry="24" fill="#6b3a1e"/><ellipse cx="57" cy="70" rx="20" ry="12" fill="#7d4727" opacity=".7"/>
+<ellipse cx="50" cy="80" rx="15" ry="10" fill="#4f2a15"/>
+<ellipse cx="77" cy="62" rx="9" ry="15" fill="#7a4526"/>
+<circle cx="83" cy="48" r="12" fill="#8a5230"/>
+<circle cx="87" cy="45" r="3" fill="#fff"/><circle cx="88" cy="45" r="1.6" fill="#111"/>
+<path d="M93 48 L104 52 L93 56 Z" fill="#f2b632"/>
+<path d="M93 55 q5 9 -1 15 q-5 -7 1 -15Z" fill="#d8343f"/>
+</symbol></defs></svg>
+<section class="stage" id="stage" aria-hidden="true">
+<div class="tk t1" id="t1"><svg viewBox="0 0 120 120"><use href="#turkey"/></svg><div class="bubble" id="b1"></div></div>
+<div class="tk t2" id="t2"><svg viewBox="0 0 120 120"><use href="#turkey"/></svg><div class="bubble" id="b2"></div></div>
+<div class="ground"></div></section>
+<div class="leaves" id="leaves" aria-hidden="true"></div>
 <script>
 /* ===== Firebase config ===== */
 const firebaseConfig = {
@@ -102,24 +149,25 @@ const firebaseConfig = {
 /* ============================================================ */
 {
 const DEFAULT=[
-["In what year is the first Thanksgiving feast traditionally dated?","1492","1607","*1621","1776"],
-["Which ship carried the Pilgrims to America?","The Santa Maria","*The Mayflower","The Endeavour","The Bounty"],
-["Which Native people shared the 1621 harvest feast with the Pilgrims?","The Cherokee","The Iroquois","*The Wampanoag","The Lakota"],
-["About how long did the 1621 harvest celebration last?","One afternoon","*Three days","One week","A full month"],
-["Which of these was almost certainly NOT served at the 1621 feast?","Venison","Wildfowl","Corn","*Pumpkin pie"],
-["Which president made Thanksgiving a national holiday in 1863?","George Washington","*Abraham Lincoln","Ulysses S. Grant","Theodore Roosevelt"],
-["Which writer campaigned for 17 years to make Thanksgiving a national holiday?","Louisa May Alcott","*Sarah Josepha Hale","Harriet Beecher Stowe","Emily Dickinson"],
-["Which president moved Thanksgiving a week earlier in 1939, nicknamed \"Franksgiving\"?","*Franklin D. Roosevelt","Herbert Hoover","Harry Truman","Calvin Coolidge"],
-["Thanksgiving in the U.S. falls on which Thursday of November?","The first","The third","*The fourth","The last"],
-["In what year was the first Macy's Thanksgiving Day Parade?","1904","*1924","1946","1952"],
-["Which NFL team has hosted a Thanksgiving Day game nearly every year since 1934?","Dallas Cowboys","Green Bay Packers","*Detroit Lions","Chicago Bears"],
-["What is a male turkey called?","A buck","*A tom","A drake","A rooster"],
-["What is a baby turkey called?","A chick","A gosling","*A poult","A kit"],
-["About how fast can a wild turkey run?","5 mph","12 mph","*25 mph","45 mph"],
-["Which state raises the most turkeys?","Texas","*Minnesota","Iowa","Georgia"],
-["Which state grows the most cranberries?","Massachusetts","New Jersey","Oregon","*Wisconsin"],
-["Which company's test kitchen created green bean casserole in 1955?","Kraft","*Campbell's","Betty Crocker","Libby's"],
-["When does Canada celebrate Thanksgiving?","*The second Monday of October","The first Thursday of November","The last Monday of September","The same day as the U.S."]
+["Which country has the most time zones, counting its territories?","Russia","United States","*France","China"],
+["How many bones are in an adult human body?","186","*206","226","256"],
+["Botanically speaking, a banana is a what?","Vegetable","*Berry","Nut","Legume"],
+["About how long does sunlight take to reach Earth?","8 seconds","*8 minutes","8 hours","1 day"],
+["Which blood type is known as the universal donor?","A positive","AB negative","*O negative","B positive"],
+["What is the largest organ of the human body?","Liver","Brain","*Skin","Lungs"],
+["About how many times does the average adult heart beat in a day?","10,000","50,000","*100,000","1,000,000"],
+["About what percentage of an adult's body weight is water?","30%","45%","*60%","85%"],
+["Which organ produces insulin?","Liver","Kidney","*Pancreas","Gallbladder"],
+["About how many people need to be in a room for a better than 50% chance that two share a birthday?","*23","57","183","366"],
+["Colombia is named after whom?","*Christopher Columbus","Simón Bolívar","Francisco Pizarro","Hernán Cortés"],
+["Which Colombian author wrote One Hundred Years of Solitude?","*Gabriel García Márquez","Pablo Neruda","Isabel Allende","Jorge Luis Borges"],
+["Panama was part of Colombia until it separated in what year?","*1903","1821","1948","1999"],
+["Which ocean borders Peru?","Indian","*Pacific","Arctic","Atlantic"],
+["Which major river begins in the mountains of Peru?","*Amazon","Danube","Nile","Mississippi"],
+["Pisco, a grape brandy, is claimed as a national drink by Peru and which other country?","Mexico","*Chile","Argentina","Bolivia"],
+["In what year did the Pilgrims land in America?","1492","1607","*1620","1776"],
+["What is the name of the place where the Pilgrims came ashore and built their colony?","Jamestown","*Plymouth","Boston","New Amsterdam"],
+["What is 95 degrees Fahrenheit in Celsius?","30°C","*35°C","40°C","45°C"]
 ];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -179,7 +227,7 @@ function curQ(){return S&&S.q&&Array.isArray(S.q.opts)?S.q:null}
 let pending=false;
 function busy(){const a=document.activeElement;return !!(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT'&&a.type!=='file')&&$('#main').contains(a))}
 function render(){
-  setQC();renderBoard();
+  setQC();renderBoard();$('#stage').hidden=!!(S&&S.phase==='q');
   if(busy()){pending=true;return}
   const keep={};['nm','hn','qt'].forEach(id=>{const el=document.getElementById(id);if(el)keep[id]=el.value});const d=$('main details'),open=d&&d.open;
   isHost?renderHost():renderPlayer();
@@ -195,12 +243,15 @@ let QS=[],qText=LS.get('tg_qtext',toText(DEFAULT)),revealing=false;
 QS=parseQs(qText);if(!QS.length){qText=toText(DEFAULT);QS=parseQs(qText)}
 const roundId=()=>S.g+'_'+S.qi;
 function newG(){return Date.now().toString(36)}
-async function askQ(i,extra){const q=QS[i];const up=Object.assign({'state':{g:S.g,phase:'q',qi:i,total:QS.length,q:{text:q.text,opts:q.opts},endsAt:now()+QMS}},extra||{});await G('').update(up)}
-async function startGame(){QS=parseQs(qText);if(!QS.length)return;const up={answers:null};for(const pid of Object.keys(PL))up['players/'+pid+'/score']=0;S={g:newG()};await askQ(0,up)}
+function perm(seed,n){let h=2166136261;for(const ch of seed){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0}const a=[...Array(n).keys()];for(let k=n-1;k>0;k--){h=Math.imul(h^(h>>>15),2246822519)>>>0;const j=h%(k+1);[a[k],a[j]]=[a[j],a[k]]}return a}
+function shuffled(g,i){const q=QS[i],o=perm(g+'_'+i,q.opts.length);return {text:q.text,opts:o.map(k=>q.opts[k]),ans:o.indexOf(q.ans)}}
+async function askQ(i,extra){const q=shuffled(S.g,i);const up=Object.assign({'state':{g:S.g,phase:'q',qi:i,total:QS.length,q:{text:q.text,opts:q.opts},endsAt:now()+QMS}},extra||{});await G('').update(up)}
+function orderQS(g){const base=parseQs(qText),p=perm('order_'+g,base.length);QS=p.map(k=>base[k])}
+async function startGame(){QS=parseQs(qText);if(!QS.length)return;const g0=newG();orderQS(g0);const up={answers:null};for(const pid of Object.keys(PL))up['players/'+pid+'/score']=0;S={g:g0};await askQ(0,up)}
 async function reveal(){
   if(!S||S.phase!=='q'||revealing)return;revealing=true;
   try{
-    const snap=await G('answers/'+roundId()).get();const a=snap.val()||{};const q=QS[S.qi];const up={};const results={};
+    const snap=await G('answers/'+roundId()).get();const a=snap.val()||{};const q=shuffled(S.g,S.qi);const up={};const results={};
     for(const[pid,c]of Object.entries(a)){if(!PL[pid])continue;results[pid]=c;if(c===q.ans)up['players/'+pid+'/score']=(+PL[pid].score||0)+PTS}
     up['state/phase']='reveal';up['state/correct']=q.ans;up['state/results']=results;
     await G('').update(up);
@@ -303,7 +354,7 @@ function fail(t){$('#main').innerHTML='<div class="card"><h2>Can\'t start the ga
     if(!isHost)return fail('Someone else is already the host on another device. To take over, delete the "host" entry under "game" in your Firebase Realtime Database, then reload.');
     db.ref('.info/connected').on('value',s=>{if(s.val()===true&&me.joined){const r=G('players/'+uid+'/on');r.onDisconnect().set(false);G('players/'+uid).once('value').then(p=>{if(p.val()&&p.val().name)r.set(true)})}});
     const st=await G('state').get();if(!st.exists())await G('state').set({g:newG(),phase:'lobby',qi:-1,total:QS.length});
-    G('state').on('value',s=>{S=s.val();if(S&&S.phase==='q'){if(!QS[S.qi]||QS[S.qi].text!==(S.q&&S.q.text)){toLobby(false);return}}watchAnswers();renderIfChanged()});
+    G('state').on('value',s=>{S=s.val();if(S&&S.g&&S.phase!=='lobby')orderQS(S.g);if(S&&S.phase==='q'){if(!QS[S.qi]||QS[S.qi].text!==(S.q&&S.q.text)){toLobby(false);return}}watchAnswers();renderIfChanged()});
   }else{
     G('state').on('value',s=>{S=s.val();renderIfChanged()});
     db.ref('.info/connected').on('value',s=>{if(s.val()===true&&me.joined){const r=G('players/'+uid+'/on');r.onDisconnect().set(false);G('players/'+uid).once('value').then(p=>{if(p.val()&&p.val().name)r.set(true)})}});
@@ -313,6 +364,36 @@ function fail(t){$('#main').innerHTML='<div class="card"><h2>Can\'t start the ga
 })();
 let ansRef=null,ansPath='';
 function watchAnswers(){const p=S&&S.phase==='q'?'answers/'+roundId():'';if(p===ansPath)return;if(ansRef)ansRef.off();ansPath=p;ANS={};if(!p){ansRef=null;return}ansRef=G(p);ansRef.on('value',s=>{ANS=s.val()||{};renderIfChanged()})}
+/* ---------- turkeys + leaves ---------- */
+const JOKES=[
+["Why did the turkey cross the road?","Why?","It was the chicken's day off!"],
+["Why did the turkey join the band?","Why?","Because it had the drumsticks!"],
+["What do you call a turkey that runs really fast?","What?","Fast food!"],
+["Why was the turkey so quiet at dinner?","Why?","He was stuffed!"],
+["What's a turkey's favorite dessert?","Tell me!","Peach gobbler!"],
+["What sound does a turkey's phone make?","What?","Wing, wing!"],
+["Why don't turkeys ever get invited to dinner?","Why not?","Because they always use fowl language!"]
+];
+{
+  const st=$('#stage'),t1=$('#t1'),t2=$('#t2'),b1=$('#b1'),b2=$('#b2');let ji=Math.floor(Math.random()*JOKES.length);
+  const say=(b,txt,ms)=>{b.textContent=txt;b.classList.add('show');setTimeout(()=>b.classList.remove('show'),ms)};
+  const at=(ms,fn)=>setTimeout(fn,ms);
+  function scene(){
+    if(st.hidden){at(1500,scene);return}
+    const[a,b,c]=JOKES[ji++%JOKES.length];
+    t1.classList.remove('flip');t1.classList.add('walk');t1.style.left='24%';
+    at(3000,()=>{t1.classList.remove('walk');say(b1,a,3300)});
+    at(6500,()=>say(b2,b,1700));
+    at(8400,()=>{say(b1,c,3800);t1.classList.add('laugh');t2.classList.add('laugh')});
+    at(10000,()=>{t1.classList.remove('laugh');t2.classList.remove('laugh')});
+    at(12500,()=>{t1.classList.add('flip','walk');t1.style.left='-30%'});
+    at(15800,()=>{t1.classList.remove('walk','flip');scene()});
+  }
+  at(700,scene);
+  const LC=['#c2611a','#8c1c2e','#e0a020','#9a4a1a','#d06a2a'];
+  $('#leaves').innerHTML=Array.from({length:12},(_,i)=>{const l=Math.random()*100,d=9+Math.random()*10,dl=-Math.random()*d,dx=(Math.random()*160-80).toFixed(0),r=(Math.random()*720-360).toFixed(0);
+    return '<svg class="leaf" viewBox="0 0 24 24" style="left:'+l.toFixed(1)+'%;animation-duration:'+d.toFixed(1)+'s;animation-delay:'+dl.toFixed(1)+'s;--dx:'+dx+'px;--r:'+r+'deg"><path d="M12 2c3 4 8 5 8 10a8 8 0 0 1-16 0c0-5 5-6 8-10z" fill="'+LC[i%LC.length]+'"/><path d="M12 6v16" stroke="#5a2a10" stroke-width="1.2"/></svg>'}).join('');
+}
 }
 </script>
 </body></html>
